@@ -1,0 +1,1092 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام مدرسة رواد تاج الأصفياء - النسخة النهائية المبهرة</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        :root { --primary: #667eea; --secondary: #764ba2; --dark: #2c3e50; --light: #f8f9fa; --success: #bb06c8; --danger: #e74c3c; --warning: #f1c40f; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #2222e3; min-height: 100vh; font-size: 18px; color: var(--dark); }
+
+        /* Auth Screen */
+        #auth-screen { position: fixed; inset: 0; background: linear-gradient(135deg, var(--primary), var(--secondary)); display: flex; justify-content: center; align-items: center; z-index: 2000; }
+        .auth-box { background: white; padding: 50px; border-radius: 20px; width: 100%; max-width: 500px; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.3); }
+        .auth-box input { margin-bottom: 20px; width: 100%; padding: 15px; border: 2px solid #eee; border-radius: 12px; font-size: 18px; transition: 0.3s; }
+        .auth-box input:focus { border-color: var(--primary); outline: none; }
+
+        /* Main Layout */
+        .container { max-width: 1600px; margin: 0 auto; background: white; min-height: 100vh; display: none; flex-direction: column; box-shadow: 0 0 50px rgba(0,0,0,0.1); }
+        .header { background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; padding: 30px; text-align: center; position: relative; }
+        .logout-btn { position: absolute; left: 30px; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.2); border: 2px solid white; color: white; padding: 12px 25px; border-radius: 10px; cursor: pointer; font-weight: bold; }
+
+        /* Academic Year Bar */
+        .academic-year-bar { display: inline-flex; align-items: center; gap: 12px; background: rgba(255,255,255,0.18); padding: 10px 20px; border-radius: 12px; margin-top: 15px; font-size: 16px; flex-wrap: wrap; justify-content: center; }
+        .academic-year-bar button { background: rgba(255,255,255,0.25); border: 1px solid white; color: white; padding: 6px 14px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: bold; }
+        .academic-year-bar button:hover { background: rgba(255,255,255,0.4); }
+
+        .content { display: flex; flex: 1; }
+        .sidebar { width: 280px; background: var(--dark); padding: 30px 0; overflow-y: auto; }
+        .sidebar button { width: 100%; padding: 20px 30px; border: none; background: none; text-align: right; cursor: pointer; font-size: 17px; color: #bdc3c7; transition: 0.3s; border-right: 6px solid transparent; }
+        .sidebar button.active { background: #34495e; color: white; border-right-color: var(--primary); font-weight: bold; }
+
+        .main { flex: 1; padding: 40px; overflow-y: auto; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; animation: slideIn 0.4s ease-out; }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Stats (Original Inspired) */
+        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 25px; margin-bottom: 40px; }
+        .stats-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 25px; margin-bottom: 40px; }
+        .stat-card { background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; padding: 40px; border-radius: 20px; text-align: center; box-shadow: 0 10px 30px rgba(102,126,234,0.3); }
+        .stat-card h3 { font-size: 50px; margin-bottom: 10px; }
+        .stat-card p { font-size: 22px; font-weight: 500; }
+
+        /* Forms & Cards */
+        .card { background: white; padding: 35px; border-radius: 20px; border: 1px solid #e1e8ed; margin-bottom: 35px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 30px; margin-bottom: 25px; }
+        /* Compact grid: ~4 fields per row, smaller font for dense forms (e.g. students) */
+        .grid-compact { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 18px; margin-bottom: 20px; }
+        .grid-compact label { font-size: 14px; margin-bottom: 8px; }
+        .grid-compact input, .grid-compact select { font-size: 15px; padding: 11px; }
+        label { display: block; margin-bottom: 12px; font-weight: 700; color: #444; }
+        input, select, textarea { width: 100%; padding: 15px; border: 2px solid #ddd; border-radius: 12px; font-size: 18px; transition: 0.3s; }
+        input:focus, select:focus { border-color: var(--primary); outline: none; }
+
+        button.btn { padding: 15px 35px; border: none; border-radius: 12px; cursor: pointer; font-weight: 700; font-size: 18px; transition: 0.3s; display: inline-flex; align-items: center; justify-content: center; gap: 10px; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-success { background: var(--success); color: white; }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-warning { background: var(--warning); color: #333; }
+        .btn:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+        .btn-sm { padding: 10px 18px; font-size: 14px; }
+
+        /* Table Styles */
+        .table-container { overflow-x: auto; border-radius: 15px; border: 1px solid #eee; margin-top: 25px; }
+        table { width: 100%; border-collapse: collapse; background: white; }
+        th, td { padding: 20px; text-align: right; border-bottom: 1px solid #eee; }
+        th { background: #fcfcfc; color: var(--dark); font-weight: 800; }
+        tr:hover { background: #f8faff; }
+
+        /* Schedule Matrix - Large Boxes */
+        .sch-matrix { width: 100%; border-collapse: separate; border-spacing: 8px; }
+        .sch-matrix th { background: var(--dark); color: white; padding: 15px; border-radius: 8px; min-width: 120px; }
+        .sch-matrix td { background: white; border: 2px solid #eee; border-radius: 10px; padding: 0; min-height: 100px; width: 150px; }
+        .sch-matrix input { border: none; height: 100px; text-align: center; font-weight: bold; background: transparent; }
+
+        /* Multi-Subject Result Section (flexible 2-field rows) */
+        .subject-row { display: grid; grid-template-columns: 1fr 1fr auto; gap: 15px; margin-bottom: 10px; }
+        /* Flexible 3-field rows (deductions / revenue items) */
+        .dyn-row-4 { display: grid; grid-template-columns: 1.4fr 0.9fr 1fr auto; gap: 15px; margin-bottom: 10px; }
+
+        .loading-overlay { position: fixed; inset: 0; background: rgba(255,255,255,0.9); display: none; justify-content: center; align-items: center; z-index: 3000; flex-direction: column; }
+        .spinner { width: 60px; height: 60px; border: 6px solid #f3f3f3; border-top: 6px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* Print Receipt */
+        #receipt-print-area { display: none; }
+        @media print {
+            body * { visibility: hidden; }
+            #receipt-print-area, #receipt-print-area * { visibility: visible; }
+            #receipt-print-area { display: block !important; position: absolute; top: 0; left: 0; width: 100%; padding: 30px; }
+        }
+    </style>
+</head>
+<body>
+    <div id="loading" class="loading-overlay"><div class="spinner"></div><p>جاري معالجة البيانات...</p></div>
+    <div id="receipt-print-area"></div>
+
+    <!-- Auth -->
+    <div id="auth-screen">
+        <div class="auth-box" id="login-form">
+            <h1 style="margin-bottom:30px">🔐 دخول النظام</h1>
+            <input type="email" id="loginEmail" placeholder="البريد الإلكتروني">
+            <input type="password" id="loginPassword" placeholder="كلمة المرور">
+            <button class="btn btn-primary" style="width: 100%;" onclick="handleAuth('login')">دخول آمن</button>
+            <p style="margin-top:25px; cursor:pointer; color:var(--primary); font-weight:bold" onclick="toggleAuth()">ليس لديك حساب؟ إنشاء حساب جديد</p>
+        </div>
+        <div class="auth-box" id="register-form" style="display: none;">
+            <h1 style="margin-bottom:30px">📝 إنشاء حساب جديد</h1>
+            <input type="email" id="regEmail" placeholder="البريد الإلكتروني">
+            <input type="password" id="regPassword" placeholder="كلمة المرور">
+            <button class="btn btn-success" style="width: 100%;" onclick="handleAuth('register')">إنشاء الحساب</button>
+            <p style="margin-top:25px; cursor:pointer; color:var(--primary); font-weight:bold" onclick="toggleAuth()">لديك حساب بالفعل؟ تسجيل دخول</p>
+        </div>
+    </div>
+
+    <!-- App Container -->
+    <div class="container" id="app-container">
+        <div class="header">
+            <button class="logout-btn" onclick="handleLogout()">🚪 خروج</button>
+            <h1 style="font-size: 36px;">🎓 رياض ومدارس رواد تاج الاصفياء الخاصة (أساس_متوسط_ثانوي)🎓 </h1>
+            <p style="font-size: 20px; opacity: 0.9; margin-top: 10px;">نظام الإدارة الشامل | مدير المدرسة: أ. محمد آدم إدريس</p>
+            <div class="academic-year-bar">
+                📅 العام الدراسي: <span id="academic-year-label">...</span>
+                <button onclick="editAcademicYear()">✏️ تعديل</button>
+                <button onclick="startNewAcademicYear()">🔄 عام دراسي جديد</button>
+            </div>
+        </div>
+
+        <div class="content">
+            <div class="sidebar">
+                <button class="tab-btn active" onclick="showTab('dashboard', this)">📊 الإحصائيات</button>
+                <button class="tab-btn" onclick="showTab('students', this)">👨‍🎓 الطلاب والمالية</button>
+                <button class="tab-btn" onclick="showTab('roster', this)">🗂️ استدعاء الطلاب</button>
+                <button class="tab-btn" onclick="showTab('teachers', this)">👨‍🏫 إدارة شؤون العاملين</button>
+                <button class="tab-btn" onclick="showTab('exams', this)">📝 الاختبارات</button>
+                <button class="tab-btn" onclick="showTab('results', this)">🏆 الشهادات والنتائج</button>
+                <button class="tab-btn" onclick="showTab('salaries', this)">💰 الرواتب</button>
+                <button class="tab-btn" onclick="showTab('schedules', this)">📅 الجداول الدراسية</button>
+                <button class="tab-btn" onclick="showTab('treasury', this)">🏦 الخزنة</button>
+                <button class="tab-btn" onclick="showTab('schoolExpenses', this)">💸 منصرفات المدرسة</button>
+                <button class="tab-btn" onclick="showTab('additionalRevenues', this)">📈 الإيرادات الإضافية</button>
+                <button class="tab-btn" onclick="showTab('trips', this)">✈️ الرحلات</button>
+                <button class="tab-btn" onclick="showTab('celebrations', this)">🎉 الاحتفالات</button>
+            </div>
+
+            <div class="main">
+                <!-- Dashboard -->
+                <div id="dashboard" class="tab-content active">
+                    <h2 style="margin-bottom:30px">📊 لوحة التحكم الرئيسية</h2>
+                    <div class="stats-grid">
+                        <div class="stat-box stat-card"><h3 id="count-students">0</h3><p>إجمالي الطلاب</p></div>
+                        <div class="stat-box stat-card"><h3 id="count-teachers">0</h3><p>إجمالي العاملين</p></div>
+                        <div class="stat-box stat-card"><h3 id="total-paid">0</h3><p>التحصيل المالي</p></div>
+                        <div class="stat-box stat-card"><h3 id="total-rem">0</h3><p>المبالغ المتبقية</p></div>
+                    </div>
+                </div>
+
+                <!-- Students -->
+                <div id="students" class="tab-content">
+                    <div class="card">
+                        <h3>👨‍🎓 تسجيل طالب جديد / تعديل بيانات</h3>
+                        <input type="hidden" id="edit-student-id">
+                        <div class="grid-compact">
+                            <div><label>اسم الطالب</label><input type="text" id="s-name" required></div>
+                            <div><label>الصف</label><select id="s-class"><option value="أولى أساس">أولى أساس</option><option value="ثانية أساس">ثانية أساس</option><option value="ثالث أساس">ثالث أساس</option><option value="رابع أساس">رابع أساس</option><option value="خامس أساس">خامس أساس</option><option value="سادس أساس">سادس أساس</option><option value="أولى متوسط">أولى متوسط</option><option value="ثانية متوسط">ثانية متوسط</option><option value="ثالث متوسط">ثالث متوسط</option><option value="أولى ثانوي">أولى ثانوي</option><option value="ثانية ثانوي">ثانية ثانوي</option><option value="ثالث علمي">ثالث علمي</option><option value="ثالث أدبي">ثالث أدبي</option></select></div>
+                            <div><label>تاريخ ميلاد الطالب</label><input type="date" id="s-dob"></div>
+                            <div><label>السكن</label><input type="text" id="s-residence"></div>
+                        </div>
+                        <div class="grid-compact">
+                            <div><label>التقدير السابق للطالب</label><input type="text" id="s-prev-grade" placeholder="مثلاً: جيد جداً"></div>
+                            <div><label>الحالة الصحية للطالب</label><input type="text" id="s-health" placeholder="مثلاً: سليم"></div>
+                            <div><label>الرقم الوطني للطالب</label><input type="text" id="s-nat-id"></div>
+                            <div><label>متأخرات السنة الماضية</label><input type="number" id="s-arrears" oninput="calcRem()"></div>
+                        </div>
+                        <div class="grid-compact">
+                            <div><label>رسوم السنة الكاملة</label><input type="number" id="s-total" oninput="calcRem()"></div>
+                            <div><label>رسوم تسجيل</label><input type="number" id="s-reg-fee" oninput="calcRem()"></div>
+                            <div><label>الخصم الخاص</label><input type="number" id="s-discount" oninput="calcRem()"></div>
+                            <div><label>القسط الأول</label><input type="number" id="s-p1" oninput="calcRem()"></div>
+                        </div>
+                        <div class="grid-compact">
+                            <div><label>القسط الثاني</label><input type="number" id="s-p2" oninput="calcRem()"></div>
+                            <div><label>القسط الثالث</label><input type="number" id="s-p3" oninput="calcRem()"></div>
+                            <div><label>القسط الرابع</label><input type="number" id="s-p4" oninput="calcRem()"></div>
+                            <div><label>المتبقي للرسوم</label><input type="number" id="s-rem" readonly style="background:#f0f0f0; font-weight:bold; color:red"></div>
+                        </div>
+                        <div class="grid-compact">
+                            <div><label>اسم ولي الأمر</label><input type="text" id="s-guardian"></div>
+                            <div><label>رقم تلفون ولي الأمر</label><input type="text" id="s-guardian-phone" placeholder="09xxxxxxxx"></div>
+                            <div><label>مهنة ولي الأمر</label><input type="text" id="s-job"></div>
+                        </div>
+                        <button class="btn btn-primary" onclick="saveStudent()">✅ حفظ بيانات الطالب</button>
+                        <button class="btn btn-warning" style="display:none" id="btn-cancel-student" onclick="resetForm('students')">إلغاء التعديل</button>
+                    </div>
+                    <div class="card">
+                        <input type="text" id="search-s" placeholder="🔍 بحث سريع عن طالب أو ولي أمر..." oninput="render('students')" style="margin-bottom:20px">
+                        <button type="button" class="btn btn-warning btn-sm" onclick="toggleArchive('archive-students')">📂 إظهار / إخفاء الأرشيف</button>
+                        <div id="archive-students" style="display:none">
+                            <div class="table-container">
+                                <table id="students-table">
+                                    <thead><tr><th>الاسم</th><th>الصف</th><th>الرسوم</th><th>المدفوع</th><th>المتبقي</th><th>ولي الأمر</th><th>إجراءات</th></tr></thead>
+                                    <tbody id="students-body"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Roster: Student Recall by Class -->
+                <div id="roster" class="tab-content">
+                    <div class="card">
+                        <h3>🗂️ استدعاء الطلاب حسب الفصل</h3>
+                        <div class="grid">
+                            <div><label>اختر الفصل</label>
+                            <select id="roster-class-select" onchange="loadRoster()">
+                                <option value="">-- اختر الفصل --</option>
+                                <option value="أولى أساس">أولى أساس</option><option value="ثانية أساس">ثانية أساس</option><option value="ثالث أساس">ثالث أساس</option><option value="رابع أساس">رابع أساس</option><option value="خامس أساس">خامس أساس</option><option value="سادس أساس">سادس أساس</option><option value="أولى متوسط">أولى متوسط</option><option value="ثانية متوسط">ثانية متوسط</option><option value="ثالث متوسط">ثالث متوسط</option><option value="أولى ثانوي">أولى ثانوي</option><option value="ثانية ثانوي">ثانية ثانوي</option><option value="ثالث علمي">ثالث علمي</option><option value="ثالث أدبي">ثالث أدبي</option>
+                            </select></div>
+                            <div><label>بحث عن طالب بالاسم</label><input type="text" id="roster-search" oninput="loadRoster()" placeholder="🔍 اكتب اسم الطالب..."></div>
+                        </div>
+                        <div class="table-container">
+                            <table>
+                                <thead><tr><th>الاسم</th><th>تاريخ الميلاد</th><th>السكن</th><th>ولي الأمر</th><th>تلفون ولي الأمر</th><th>الرقم الوطني</th><th>المتبقي</th></tr></thead>
+                                <tbody id="roster-body"><tr><td colspan="7" style="text-align:center;color:#888">الرجاء اختيار الفصل لعرض الطلاب</td></tr></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Teachers / Staff Affairs -->
+                <div id="teachers" class="tab-content">
+                    <div class="card">
+                        <h3>👨‍🏫 إدارة شؤون العاملين</h3>
+                        <input type="hidden" id="edit-teacher-id">
+                        <div class="grid">
+                            <input type="text" id="t-name" placeholder="اسم العامل/المعلم الرباعي">
+                            <input type="text" id="t-subject" placeholder="المادة / الوظيفة">
+                            <input type="text" id="t-phone" placeholder="رقم الهاتف / واتساب">
+                            <button class="btn btn-primary" onclick="saveTeacher()">✅ حفظ البيانات</button>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <button type="button" class="btn btn-warning btn-sm" onclick="toggleArchive('archive-teachers')">📂 إظهار / إخفاء الأرشيف</button>
+                        <div id="archive-teachers" style="display:none">
+                            <div class="table-container">
+                                <table>
+                                    <thead><tr><th>الاسم</th><th>المادة/الوظيفة</th><th>رقم الهاتف</th><th>إجراءات</th></tr></thead>
+                                    <tbody id="teachers-body"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Exams -->
+                <div id="exams" class="tab-content">
+                    <div class="card">
+                        <h3>📝 إدارة الاختبارات الشهرية والنهائية</h3>
+                        <input type="hidden" id="edit-exam-id">
+                        <div class="grid">
+                            <input type="text" id="ex-name" placeholder="عنوان الاختبار (مثلاً: اختبار أكتوبر)">
+                            <select id="ex-class"><option value="أولى أساس">أولى أساس</option><option value="ثانية أساس">ثانية أساس</option><option value="ثالث أساس">ثالث أساس</option><option value="رابع أساس">رابع أساس</option><option value="خامس أساس">خامس أساس</option><option value="سادس أساس">سادس أساس</option><option value="أولى متوسط">أولى متوسط</option><option value="ثانية متوسط">ثانية متوسط</option><option value="ثالث متوسط">ثالث متوسط</option><option value="أولى ثانوي">أولى ثانوي</option><option value="ثانية ثانوي">ثانية ثانوي</option><option value="ثالث علمي">ثالث علمي</option><option value="ثالث أدبي">ثالث أدبي</option></select>
+                            <input type="date" id="ex-date">
+                            <button class="btn btn-primary" onclick="saveExam()">✅ إضافة الاختبار</button>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <button type="button" class="btn btn-warning btn-sm" onclick="toggleArchive('archive-exams')">📂 إظهار / إخفاء الأرشيف</button>
+                        <div id="archive-exams" style="display:none">
+                            <div class="table-container">
+                                <table><thead><tr><th>الاختبار</th><th>الصف</th><th>التاريخ</th><th>إجراءات</th></tr></thead><tbody id="exams-body"></tbody></table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Results (The Masterpiece Multi-Subject) -->
+                <div id="results" class="tab-content">
+                    <div class="card">
+                        <h3>🏆 استخراج الشهادات والنتائج (متعدد المواد)</h3>
+                        <input type="hidden" id="edit-result-id">
+                        <div class="grid">
+                            <div><label>اختر الطالب</label><select id="res-student" class="student-select" onchange="onStudentSelect(this,'res-class')"><option value="">اختر الطالب</option></select></div>
+                            <div><label>الفصل (تلقائي)</label><input type="text" id="res-class" readonly style="background:#f0f0f0"></div>
+                            <div><label>اسم الاختبار</label><input type="text" id="res-exam-title" placeholder="مثلاً: امتحانات الفترة الأولى"></div>
+                        </div>
+                        <hr style="margin:20px 0">
+                        <div id="subjects-container">
+                            <label>المواد والدرجات (من 100)</label>
+                            <div class="subject-row">
+                                <input type="text" class="sub-name" placeholder="المادة (مثلاً: لغة عربية)">
+                                <input type="number" class="sub-score" placeholder="الدرجة" oninput="calcFinalResult()">
+                                <button type="button" class="btn btn-danger" onclick="removeSubjectRow(this)">✖</button>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-warning" onclick="addSubjectRow()" style="margin-bottom:20px">➕ إضافة مادة أخرى</button>
+
+                        <div class="grid" style="background: #f8faff; padding: 20px; border-radius: 15px; border: 2px dashed var(--primary);">
+                            <div style="text-align:center"><h4>النسبة المئوية</h4><h2 id="final-percent" style="color:var(--primary)">0%</h2></div>
+                            <div style="text-align:center"><h4>التقدير العام</h4><h2 id="final-grade" style="color:var(--success)">-</h2></div>
+                        </div>
+                        <button class="btn btn-primary" onclick="saveResult()" style="margin-top:20px; width: 100%;">💾 حفظ الشهادة في السحابة</button>
+                    </div>
+
+                    <div class="card">
+                        <div class="grid">
+                            <select id="res-filter-class" onchange="render('results')">
+                                <option value="all" selected>كل الفصول</option>
+                                <option value="أولى أساس">أولى أساس</option><option value="ثانية أساس">ثانية أساس</option><option value="ثالث أساس">ثالث أساس</option><option value="رابع أساس">رابع أساس</option><option value="خامس أساس">خامس أساس</option><option value="سادس أساس">سادس أساس</option><option value="أولى متوسط">أولى متوسط</option><option value="ثانية متوسط">ثانية متوسط</option><option value="ثالث متوسط">ثالث متوسط</option><option value="أولى ثانوي">أولى ثانوي</option><option value="ثانية ثانوي">ثانية ثانوي</option><option value="ثالث علمي">ثالث علمي</option><option value="ثالث أدبي">ثالث أدبي</option>
+                            </select>
+                            <input type="text" id="search-res" placeholder="🔍 بحث عن شهادة طالب..." oninput="render('results')">
+                        </div>
+                        <button type="button" class="btn btn-warning btn-sm" onclick="toggleArchive('archive-results')">📂 إظهار / إخفاء الأرشيف</button>
+                        <div id="archive-results" style="display:none">
+                            <div class="table-container">
+                                <table>
+                                    <thead><tr><th>الطالب</th><th>الفصل</th><th>الاختبار</th><th>النسبة</th><th>التقدير</th><th>إجراءات</th></tr></thead>
+                                    <tbody id="results-body"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Salaries -->
+                <div id="salaries" class="tab-content">
+                    <div class="card">
+                        <h3>💰 كشوفات الرواتب والحوافز</h3>
+                        <input type="hidden" id="edit-salary-id">
+                        <div class="grid">
+                            <div><label>اسم العامل</label><input type="text" id="sal-name"></div>
+                            <div><label>الراتب الأساسي</label><input type="number" id="sal-base" oninput="calcNetSalary()"></div>
+                            <div><label>الحوافز</label><input type="number" id="sal-bonus" oninput="calcNetSalary()"></div>
+                            <div><label>تاريخ الصرف</label><input type="date" id="sal-date"></div>
+                        </div>
+                        <hr style="margin:20px 0">
+                        <div id="deductions-container">
+                            <label>الخصومات (مرنة حسب التاريخ)</label>
+                            <div class="dyn-row-4">
+                                <input type="text" class="ded-desc" placeholder="وصف الخصم (مثلاً: خصم 1)">
+                                <input type="number" class="ded-amount" placeholder="المبلغ" oninput="calcNetSalary()">
+                                <input type="date" class="ded-date">
+                                <button type="button" class="btn btn-danger" onclick="removeDeductionRow(this)">✖</button>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-warning" onclick="addDeductionRow()" style="margin-bottom:20px">➕ إضافة خصم آخر</button>
+                        <div class="grid">
+                            <div><label>صافي الراتب المستحق</label><input type="number" id="sal-net" readonly style="background:#f0f0f0; color:var(--success); font-weight:bold"></div>
+                        </div>
+                        <button class="btn btn-primary" onclick="saveSalary()">✅ اعتماد الصرف</button>
+                    </div>
+                    <div class="card">
+                        <button type="button" class="btn btn-warning btn-sm" onclick="toggleArchive('archive-salaries')">📂 إظهار / إخفاء الأرشيف</button>
+                        <div id="archive-salaries" style="display:none">
+                            <div class="table-container">
+                                <table>
+                                    <thead><tr><th>الاسم</th><th>الأساسي</th><th>الحوافز</th><th>إجمالي الخصومات</th><th>الصافي</th><th>التاريخ</th><th>إجراءات</th></tr></thead>
+                                    <tbody id="salaries-body"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Schedules (Masterpiece Version) -->
+                <div id="schedules" class="tab-content">
+                    <div class="card">
+                        <h3>📅 الجداول الدراسية (مربعات واسعة - 8 حصص)</h3>
+                        <div class="grid" style="grid-template-columns: 1fr auto;">
+                            <select id="sch-class-select" onchange="loadSchedule()">
+                                <option value="أولى أساس">أولى أساس</option><option value="ثانية أساس">ثانية أساس</option><option value="ثالث أساس">ثالث أساس</option><option value="رابع أساس">رابع أساس</option><option value="خامس أساس">خامس أساس</option><option value="سادس أساس">سادس أساس</option><option value="أولى متوسط">أولى متوسط</option><option value="ثانية متوسط">ثانية متوسط</option><option value="ثالث متوسط">ثالث متوسط</option><option value="أولى ثانوي">أولى ثانوي</option><option value="ثانية ثانوي">ثانية ثانوي</option><option value="ثالث علمي">ثالث علمي</option><option value="ثالث أدبي">ثالث أدبي</option>
+                            </select>
+                            <button class="btn btn-success" onclick="saveSchedule()">💾 حفظ الجدول للفصل</button>
+                        </div>
+                        <div class="table-container" style="margin-top:30px">
+                            <table class="sch-matrix">
+                                <thead><tr><th>اليوم</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th></tr></thead>
+                                <tbody id="sch-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <!-- Treasury (الخزنة) -->
+                <div id="treasury" class="tab-content">
+                    <div class="card">
+                        <h3>🏦 ملخص الخزنة</h3>
+                        <div class="stats-grid-3">
+                            <div class="stat-card" style="background: linear-gradient(135deg,#11998e,#38ef7d)"><h3 id="treasury-income">0</h3><p>إجمالي الداخل للخزنة</p></div>
+                            <div class="stat-card" style="background: linear-gradient(135deg,#e74c3c,#c0392b)"><h3 id="treasury-expenses">0</h3><p>إجمالي منصرفات الخزنة</p></div>
+                            <div class="stat-card"><h3 id="treasury-balance">0</h3><p>الرصيد الحالي</p></div>
+                        </div>
+                        <p style="color:#888">* يتم تجميع كل مبلغ يدخل المدرسة تلقائياً هنا (أقساط الطلاب + الإيرادات الإضافية + رسوم الرحلات) ثم يُخصم منه منصرفات الخزنة أدناه.</p>
+                    </div>
+                    <div class="card">
+                        <h3>➖ تسجيل منصرف من الخزنة</h3>
+                        <input type="hidden" id="edit-treasuryExpense-id">
+                        <div class="grid">
+                            <div><label>اسم المنصرف</label><input type="text" id="tre-exp-name" placeholder="مثلاً: شراء أدوات مكتبية"></div>
+                            <div><label>المبلغ</label><input type="number" id="tre-exp-amount"></div>
+                            <div><label>التاريخ</label><input type="date" id="tre-exp-date"></div>
+                        </div>
+                        <button class="btn btn-primary" onclick="saveTreasuryExpense()">✅ حفظ المنصرف</button>
+                    </div>
+                    <div class="card">
+                        <button type="button" class="btn btn-warning btn-sm" onclick="toggleArchive('archive-treasuryExpenses')">📂 إظهار / إخفاء الأرشيف</button>
+                        <div id="archive-treasuryExpenses" style="display:none">
+                            <div class="table-container">
+                                <table>
+                                    <thead><tr><th>اسم المنصرف</th><th>المبلغ</th><th>التاريخ</th><th>إجراءات</th></tr></thead>
+                                    <tbody id="treasuryExpenses-body"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- School Expenses (منصرفات المدرسة) -->
+                <div id="schoolExpenses" class="tab-content">
+                    <div class="card">
+                        <h3>💸 تسجيل منصرف مدرسة (يومي / شهري)</h3>
+                        <input type="hidden" id="edit-schoolExpense-id">
+                        <div class="grid">
+                            <div><label>نوع المنصرف</label><select id="sch-exp-type"><option value="يومي">يومي</option><option value="شهري">شهري</option></select></div>
+                            <div><label>اسم المنصرف</label><input type="text" id="sch-exp-name" placeholder="مثلاً: كهرباء / صيانة / نظافة"></div>
+                            <div><label>المبلغ</label><input type="number" id="sch-exp-amount"></div>
+                            <div><label>التاريخ</label><input type="date" id="sch-exp-date"></div>
+                        </div>
+                        <button class="btn btn-primary" onclick="saveSchoolExpense()">✅ حفظ المنصرف</button>
+                    </div>
+                    <div class="card">
+                        <button type="button" class="btn btn-warning btn-sm" onclick="toggleArchive('archive-schoolExpenses')">📂 إظهار / إخفاء الأرشيف</button>
+                        <div id="archive-schoolExpenses" style="display:none">
+                            <div class="table-container">
+                                <table>
+                                    <thead><tr><th>النوع</th><th>اسم المنصرف</th><th>المبلغ</th><th>التاريخ</th><th>إجراءات</th></tr></thead>
+                                    <tbody id="schoolExpenses-body"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Additional Revenues (الإيرادات الإضافية) -->
+                <div id="additionalRevenues" class="tab-content">
+                    <div class="card">
+                        <h3>📈 تسجيل إيراد إضافي لطالب</h3>
+                        <input type="hidden" id="edit-additionalRevenue-id">
+                        <div class="grid">
+                            <div><label>اختر الطالب</label><select id="ar-student" class="student-select"><option value="">اختر الطالب</option></select></div>
+                        </div>
+                        <hr style="margin:20px 0">
+                        <datalist id="revenue-types">
+                            <option value="امتحان شهري أول"></option>
+                            <option value="امتحان شهري ثاني"></option>
+                            <option value="امتحان شهري ثالث"></option>
+                            <option value="امتحان الفترة الأولى"></option>
+                            <option value="الامتحان التجريبي"></option>
+                            <option value="امتحان الشهادة"></option>
+                            <option value="معالجات"></option>
+                            <option value="معسكرات"></option>
+                        </datalist>
+                        <div id="revenue-items-container">
+                            <label>بنود الإيراد</label>
+                            <div class="dyn-row-4">
+                                <input type="text" class="rev-type" list="revenue-types" placeholder="نوع الإيراد (اختر أو اكتب نوع جديد)">
+                                <input type="number" class="rev-amount" placeholder="المبلغ">
+                                <input type="date" class="rev-date">
+                                <button type="button" class="btn btn-danger" onclick="removeRevenueRow(this)">✖</button>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-warning" onclick="addRevenueRow()" style="margin-bottom:20px">➕ إضافة بند إيراد آخر (امتحان شهري / معالجات / معسكر ... إلخ)</button>
+                        <button class="btn btn-primary" onclick="saveAdditionalRevenue()" style="width:100%">💾 حفظ الإيراد في السحابة</button>
+                    </div>
+                    <div class="card">
+                        <button type="button" class="btn btn-warning btn-sm" onclick="toggleArchive('archive-additionalRevenues')">📂 إظهار / إخفاء الأرشيف</button>
+                        <div id="archive-additionalRevenues" style="display:none">
+                            <div class="table-container">
+                                <table>
+                                    <thead><tr><th>الطالب</th><th>الفصل</th><th>عدد البنود</th><th>الإجمالي</th><th>إجراءات</th></tr></thead>
+                                    <tbody id="additionalRevenues-body"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Trips (الرحلات) -->
+                <div id="trips" class="tab-content">
+                    <div class="card">
+                        <h3>✈️ تسجيل رحلة (علمية / ترفيهية)</h3>
+                        <input type="hidden" id="edit-trip-id">
+                        <div class="grid">
+                            <div><label>نوع الرحلة</label><select id="trip-type"><option value="علمية">علمية</option><option value="ترفيهية">ترفيهية</option></select></div>
+                            <div><label>اسم الرحلة</label><input type="text" id="trip-name" placeholder="مثلاً: زيارة المتحف"></div>
+                            <div><label>اختر الطالب</label><select id="trip-student" class="student-select"><option value="">اختر الطالب</option></select></div>
+                            <div><label>رسوم الرحلة</label><input type="number" id="trip-fee"></div>
+                            <div><label>التاريخ</label><input type="date" id="trip-date"></div>
+                        </div>
+                        <button class="btn btn-primary" onclick="saveTrip()">✅ حفظ بيانات الرحلة</button>
+                    </div>
+                    <div class="card">
+                        <button type="button" class="btn btn-warning btn-sm" onclick="toggleArchive('archive-trips')">📂 إظهار / إخفاء الأرشيف</button>
+                        <div id="archive-trips" style="display:none">
+                            <div class="table-container">
+                                <table>
+                                    <thead><tr><th>الطالب</th><th>الفصل</th><th>النوع</th><th>اسم الرحلة</th><th>الرسوم</th><th>التاريخ</th><th>إجراءات</th></tr></thead>
+                                    <tbody id="trips-body"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Celebrations (الاحتفالات) -->
+                <div id="celebrations" class="tab-content">
+                    <div class="card">
+                        <h3>🎉 تسجيل احتفال جديد</h3>
+                        <input type="hidden" id="edit-celebration-id">
+                        <div class="grid">
+                            <div><label>اسم الاحتفال</label><input type="text" id="cel-name" placeholder="مثلاً: حفل تخرج الدفعة"></div>
+                            <div><label>التاريخ</label><input type="date" id="cel-date"></div>
+                        </div>
+                        <hr style="margin:20px 0">
+                        <div id="celebration-items-container">
+                            <label>منصرفات الاحتفال</label>
+                            <div class="subject-row">
+                                <input type="text" class="cel-item-name" placeholder="اسم المنصرف (مثلاً: تجهيزات)">
+                                <input type="number" class="cel-item-amount" placeholder="المبلغ">
+                                <button type="button" class="btn btn-danger" onclick="removeCelebrationRow(this)">✖</button>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-warning" onclick="addCelebrationRow()" style="margin-bottom:20px">➕ إضافة منصرف آخر</button>
+                        <button class="btn btn-primary" onclick="saveCelebration()" style="width:100%">💾 حفظ الاحتفال</button>
+                    </div>
+                    <div class="card">
+                        <button type="button" class="btn btn-warning btn-sm" onclick="toggleArchive('archive-celebrations')">📂 إظهار / إخفاء الأرشيف</button>
+                        <div id="archive-celebrations" style="display:none">
+                            <div class="table-container">
+                                <table>
+                                    <thead><tr><th>اسم الاحتفال</th><th>التاريخ</th><th>عدد المنصرفات</th><th>الإجمالي</th><th>إجراءات</th></tr></thead>
+                                    <tbody id="celebrations-body"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, setDoc, deleteDoc, doc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyByCMDqIkc6-OVCTuq2qfmj0Sa4zZV82bY",
+            authDomain: "awadtajalasfiaeprivateschool.firebaseapp.com",
+            projectId: "awadtajalasfiaeprivateschool",
+            appId: "1:704114065200:web:a653f79b8f9810770392f5"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // --- Multi-tenant isolation: every account (uid) gets its own private data tree ---
+        // All collections live under users/{uid}/{collectionName} so a brand-new email/account
+        // always starts completely empty, with zero chance of mixing data between accounts.
+        let uid = null;
+        function userCol(name) { return collection(db, 'users', uid, name); }
+        function userDocRef(name, id) { return doc(db, 'users', uid, name, id); }
+
+        // --- Helper: Validate Fields ---
+        const validate = (fields) => {
+            for(let f of fields) {
+                const el = document.getElementById(f);
+                if(!el || !el.value.trim()) { alert("⚠️ الرجاء ملء كافة الحقول المطلوبة!"); return false; }
+            }
+            return true;
+        };
+
+        // --- Auth & Navigation ---
+        window.toggleAuth = () => {
+            const login = document.getElementById('login-form'), reg = document.getElementById('register-form');
+            login.style.display = login.style.display==='none'?'block':'none';
+            reg.style.display = reg.style.display==='none'?'block':'none';
+        };
+        window.handleAuth = async (t) => {
+            const e = document.getElementById(t==='login'?'loginEmail':'regEmail').value, p = document.getElementById(t==='login'?'loginPassword':'regPassword').value;
+            if(!e || !p) return alert("الرجاء إدخال البريد وكلمة المرور");
+            document.getElementById('loading').style.display='flex';
+            try { t==='login'? await signInWithEmailAndPassword(auth,e,p) : await createUserWithEmailAndPassword(auth,e,p); } catch(err) { alert(err.message); }
+            document.getElementById('loading').style.display='none';
+        };
+        window.handleLogout = () => signOut(auth);
+
+        // --- Active listeners tracking (so switching accounts never leaks old data) ---
+        let activeUnsubs = [];
+        let scheduleUnsub = null;
+        function clearAllListeners() {
+            activeUnsubs.forEach(fn => { try { fn(); } catch(e) {} });
+            activeUnsubs = [];
+            if(scheduleUnsub) { try { scheduleUnsub(); } catch(e) {} scheduleUnsub = null; }
+        }
+
+        onAuthStateChanged(auth, u => {
+            clearAllListeners();
+            document.getElementById('auth-screen').style.display = u?'none':'flex';
+            document.getElementById('app-container').style.display = u?'flex':'none';
+            if(u) {
+                uid = u.uid;
+                window.state = { students:[], teachers:[], exams:[], results:[], salaries:[], treasuryExpenses:[], schoolExpenses:[], additionalRevenues:[], trips:[], celebrations:[], academicYear:'' };
+                document.getElementById('academic-year-label').textContent = '...';
+                startListeners();
+                loadSchedule();
+                listenAcademicYear();
+            } else {
+                uid = null;
+            }
+        });
+        window.showTab = (n, btn) => {
+            document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+            document.getElementById(n).classList.add('active');
+            document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+            if(btn) btn.classList.add('active');
+        };
+
+        // --- Archive show/hide (same pattern across all list screens) ---
+        window.toggleArchive = (id) => {
+            const el = document.getElementById(id);
+            if(!el) return;
+            el.style.display = (el.style.display === 'none' || el.style.display === '') ? 'block' : 'none';
+        };
+
+        // --- Academic Year ---
+        function listenAcademicYear() {
+            const unsub = onSnapshot(userDocRef('settings','academicYear'), d => {
+                const label = d.exists() ? (d.data().label || '') : '';
+                document.getElementById('academic-year-label').textContent = label || 'غير محدد - اضغط تعديل';
+                window.state.academicYear = label;
+            });
+            activeUnsubs.push(unsub);
+        }
+        window.editAcademicYear = async () => {
+            const current = window.state.academicYear || '';
+            const val = prompt('أدخل العام الدراسي (مثال: 2025-2026):', current);
+            if(val === null) return;
+            if(!val.trim()) return alert('الرجاء إدخال قيمة صحيحة');
+            await setDoc(userDocRef('settings','academicYear'), { label: val.trim(), updatedAt: new Date() });
+        };
+        window.startNewAcademicYear = async () => {
+            const current = window.state.academicYear || '';
+            let suggestion = '';
+            const m = current.match(/(\d{4})\s*-\s*(\d{4})/);
+            if(m) suggestion = `${+m[1]+1}-${+m[2]+1}`;
+            const val = prompt('بدء عام دراسي جديد - أدخل تسمية العام الجديد:\n(ملاحظة: هذا يغيّر فقط عنوان العام الدراسي المعروض في الأعلى، ولا يحذف أي بيانات للطلاب أو السجلات المالية)', suggestion || current);
+            if(val === null) return;
+            if(!val.trim()) return alert('الرجاء إدخال قيمة صحيحة');
+            if(!confirm(`هل تريد بدء العام الدراسي "${val.trim()}"؟`)) return;
+            await setDoc(userDocRef('settings','academicYear'), { label: val.trim(), updatedAt: new Date() });
+            alert('✅ تم تحديث العام الدراسي إلى: ' + val.trim());
+        };
+
+        // --- Logic: Calculations ---
+        window.calcRem = () => {
+            const total = +document.getElementById('s-total').value || 0;
+            const regFee = +document.getElementById('s-reg-fee').value || 0;
+            const arrears = +document.getElementById('s-arrears').value || 0;
+            const discount = +document.getElementById('s-discount').value || 0;
+            const paid = (+document.getElementById('s-p1').value||0)+(+document.getElementById('s-p2').value||0)+(+document.getElementById('s-p3').value||0)+(+document.getElementById('s-p4').value||0);
+            document.getElementById('s-rem').value = (total + regFee + arrears - discount) - paid;
+        };
+        window.calcNetSalary = () => {
+            const base = +document.getElementById('sal-base').value || 0;
+            const bonus = +document.getElementById('sal-bonus').value || 0;
+            const deduct = Array.from(document.querySelectorAll('#deductions-container .ded-amount')).reduce((a,el)=>a+(+el.value||0),0);document.getElementById('sal-net').value = base + bonus - deduct;
+        };
+
+        // --- Student selects (شاشة التسجيل مرة واحدة - الاستدعاء في كل مكان) ---
+        function fillStudentSelects() {
+            document.querySelectorAll('.student-select').forEach(sel => {
+                const cur = sel.value;
+                sel.innerHTML = '<option value="">اختر الطالب</option>' + window.state.students.map(s => `<option value="${s.id}">${s.name} - ${s.class}</option>`).join('');
+                if(cur) sel.value = cur;
+            });
+        }
+        window.onStudentSelect = (sel, classFieldId) => {
+            const s = window.state.students.find(x=>x.id===sel.value);
+            const target = document.getElementById(classFieldId);
+            if(target) target.value = s ? s.class : '';
+        };
+
+        // --- Row Builders (Reusable for Add + Edit) ---
+        function buildSubjectRow(s) {
+            s = s || {name:'',score:''};
+            const div = document.createElement('div');
+            div.className = 'subject-row';
+            div.innerHTML = `<input type="text" class="sub-name" placeholder="المادة" value="${s.name||''}"><input type="number" class="sub-score" placeholder="الدرجة" value="${s.score||''}" oninput="calcFinalResult()"><button type="button" class="btn btn-danger" onclick="removeSubjectRow(this)">✖</button>`;
+            return div;
+        }
+        function buildDeductionRow(d) {
+            d = d || {desc:'',amount:'',date:''};
+            const div = document.createElement('div');
+            div.className = 'dyn-row-4';
+            div.innerHTML = `<input type="text" class="ded-desc" placeholder="وصف الخصم (مثلاً: خصم 1)" value="${d.desc||''}"><input type="number" class="ded-amount" placeholder="المبلغ" value="${d.amount||''}" oninput="calcNetSalary()"><input type="date" class="ded-date" value="${d.date||''}"><button type="button" class="btn btn-danger" onclick="removeDeductionRow(this)">✖</button>`;
+            return div;
+        }
+        function buildRevenueRow(it) {
+            it = it || {type:'',amount:'',date:''};
+            const div = document.createElement('div');
+            div.className = 'dyn-row-4';
+            div.innerHTML = `<input type="text" class="rev-type" list="revenue-types" placeholder="نوع الإيراد" value="${it.type||''}"><input type="number" class="rev-amount" placeholder="المبلغ" value="${it.amount||''}"><input type="date" class="rev-date" value="${it.date||''}"><button type="button" class="btn btn-danger" onclick="removeRevenueRow(this)">✖</button>`;
+            return div;
+        }
+        function buildCelebrationRow(it) {
+            it = it || {name:'',amount:''};
+            const div = document.createElement('div');
+            div.className = 'subject-row';
+            div.innerHTML = `<input type="text" class="cel-item-name" placeholder="اسم المنصرف" value="${it.name||''}"><input type="number" class="cel-item-amount" placeholder="المبلغ" value="${it.amount||''}"><button type="button" class="btn btn-danger" onclick="removeCelebrationRow(this)">✖</button>`;
+            return div;
+        }
+
+        // --- Results Logic (Multi-Subject) ---
+        window.addSubjectRow = () => document.getElementById('subjects-container').appendChild(buildSubjectRow());
+        window.removeSubjectRow = (btn) => { btn.parentElement.remove(); calcFinalResult(); };
+        window.calcFinalResult = () => {
+            const scores = Array.from(document.querySelectorAll('#subjects-container .sub-score')).map(i => +i.value || 0);
+            if(scores.length === 0) return;
+            const avg = scores.reduce((a,b)=>a+b, 0) / scores.length;
+            document.getElementById('final-percent').textContent = avg.toFixed(1) + "%";
+            let g = "ضعيف"; let c = "var(--danger)";
+            if(avg >= 80) { g = "ممتاز"; c = "var(--success)"; }
+            else if(avg >= 70) { g = "جيد جداً"; c = "var(--primary)"; }
+            else if(avg >= 60) { g = "جيد"; c = "var(--warning)"; }
+            else if(avg >= 50) { g = "مقبول"; c = "#e67e22"; }
+            document.getElementById('final-grade').textContent = g;
+            document.getElementById('final-grade').style.color = c;
+        };
+
+        // --- Deduction rows (Salaries) ---
+        window.addDeductionRow = () => document.getElementById('deductions-container').appendChild(buildDeductionRow());
+        window.removeDeductionRow = (btn) => { btn.parentElement.remove(); calcNetSalary(); };
+
+        // --- Revenue rows (Additional Revenues) ---
+        window.addRevenueRow = () => document.getElementById('revenue-items-container').appendChild(buildRevenueRow());
+        window.removeRevenueRow = (btn) => btn.parentElement.remove();
+
+        // --- Celebration rows ---
+        window.addCelebrationRow = () => document.getElementById('celebration-items-container').appendChild(buildCelebrationRow());
+        window.removeCelebrationRow = (btn) => btn.parentElement.remove();
+
+        // --- Data Persistence ---
+        window.state = { students:[], teachers:[], exams:[], results:[], salaries:[], treasuryExpenses:[], schoolExpenses:[], additionalRevenues:[], trips:[], celebrations:[], academicYear:'' };
+        const save = async (col, idEl, data, fields, resetId) => {
+            if(!validate(fields)) return;
+            document.getElementById('loading').style.display='flex';
+            const id = document.getElementById(idEl).value;
+            id ? await setDoc(userDocRef(col, id), data) : await addDoc(userCol(col), data);
+            resetForm(resetId);
+            document.getElementById('loading').style.display='none';
+        };
+
+        window.saveStudent = () => save('students', 'edit-student-id', {
+            name: document.getElementById('s-name').value, class: document.getElementById('s-class').value,
+            dob: document.getElementById('s-dob').value, residence: document.getElementById('s-residence').value,
+            prevGrade: document.getElementById('s-prev-grade').value, health: document.getElementById('s-health').value,
+            natId: document.getElementById('s-nat-id').value, arrears: +document.getElementById('s-arrears').value || 0,
+            total: +document.getElementById('s-total').value || 0, regFee: +document.getElementById('s-reg-fee').value || 0,
+            discount: +document.getElementById('s-discount').value || 0,
+            p1: +document.getElementById('s-p1').value || 0, p2: +document.getElementById('s-p2').value || 0,
+            p3: +document.getElementById('s-p3').value || 0, p4: +document.getElementById('s-p4').value || 0,
+            rem: +document.getElementById('s-rem').value || 0,
+            guardian: document.getElementById('s-guardian').value, guardianPhone: document.getElementById('s-guardian-phone').value,
+            job: document.getElementById('s-job').value, ts: new Date()
+        }, ['s-name'], 'students');
+
+        window.saveTeacher = () => save('teachers', 'edit-teacher-id', { name: document.getElementById('t-name').value, subject: document.getElementById('t-subject').value, phone: document.getElementById('t-phone').value, ts: new Date() }, ['t-name','t-subject'], 'teachers');
+        window.saveExam = () => save('exams', 'edit-exam-id', { name: document.getElementById('ex-name').value, class: document.getElementById('ex-class').value, date: document.getElementById('ex-date').value, ts: new Date() }, ['ex-name'], 'exams');
+
+        window.saveSalary = () => {
+            const deductions = Array.from(document.querySelectorAll('#deductions-container .dyn-row-4')).map(row => ({
+                desc: row.querySelector('.ded-desc').value,
+                amount: +row.querySelector('.ded-amount').value || 0,
+                date: row.querySelector('.ded-date').value
+            })).filter(d => d.desc || d.amount);
+            save('salaries', 'edit-salary-id', {
+                name: document.getElementById('sal-name').value, base: +document.getElementById('sal-base').value || 0,
+                bonus: +document.getElementById('sal-bonus').value || 0, deductions,
+                net: +document.getElementById('sal-net').value || 0, date: document.getElementById('sal-date').value, ts: new Date()
+            }, ['sal-name','sal-date'], 'salaries').then(() => {
+                const c = document.getElementById('deductions-container');
+                c.innerHTML = '<label>الخصومات (مرنة حسب التاريخ)</label>';
+                c.appendChild(buildDeductionRow());
+                calcNetSalary();
+            });
+        };
+
+        window.saveResult = async () => {
+            const studentId = document.getElementById('res-student').value;
+            const student = window.state.students.find(s=>s.id===studentId);
+            if(!student) { alert("⚠️ الرجاء اختيار الطالب من القائمة"); return; }
+            const subjects = Array.from(document.querySelectorAll('#subjects-container .subject-row')).map(row => ({
+                name: row.querySelector('.sub-name').value,
+                score: +row.querySelector('.sub-score').value || 0
+            })).filter(s => s.name);
+            const data = {
+                studentId, name: student.name, class: student.class,
+                exam: document.getElementById('res-exam-title').value,
+                subjects, percent: document.getElementById('final-percent').textContent,
+                grade: document.getElementById('final-grade').textContent, ts: new Date()
+            };
+            await save('results', 'edit-result-id', data, [], 'results');
+            const c = document.getElementById('subjects-container');
+            c.innerHTML = '<label>المواد والدرجات (من 100)</label>';
+            c.appendChild(buildSubjectRow());
+            document.getElementById('res-class').value = "";
+            document.getElementById('final-percent').textContent = "0%"; document.getElementById('final-grade').textContent = "-";
+        };
+
+        window.saveTreasuryExpense = () => save('treasuryExpenses', 'edit-treasuryExpense-id', {
+            name: document.getElementById('tre-exp-name').value, amount: +document.getElementById('tre-exp-amount').value || 0,
+            date: document.getElementById('tre-exp-date').value, ts: new Date()
+        }, ['tre-exp-name','tre-exp-amount'], 'treasury');
+
+        window.saveSchoolExpense = () => save('schoolExpenses', 'edit-schoolExpense-id', {
+            type: document.getElementById('sch-exp-type').value, name: document.getElementById('sch-exp-name').value,
+            amount: +document.getElementById('sch-exp-amount').value || 0, date: document.getElementById('sch-exp-date').value, ts: new Date()
+        }, ['sch-exp-name','sch-exp-amount'], 'schoolExpenses');
+
+        window.saveTrip = () => {
+            const studentId = document.getElementById('trip-student').value;
+            const student = window.state.students.find(s=>s.id===studentId);
+            if(!student) { alert("⚠️ الرجاء اختيار الطالب"); return; }
+            save('trips', 'edit-trip-id', {
+                studentId, name: student.name, class: student.class,
+                type: document.getElementById('trip-type').value, tripName: document.getElementById('trip-name').value,
+                fee: +document.getElementById('trip-fee').value || 0, date: document.getElementById('trip-date').value, ts: new Date()
+            }, [], 'trips');
+        };
+
+        window.saveAdditionalRevenue = async () => {
+            const studentId = document.getElementById('ar-student').value;
+            const student = window.state.students.find(s=>s.id===studentId);
+            if(!student) { alert("⚠️ الرجاء اختيار الطالب"); return; }
+            const items = Array.from(document.querySelectorAll('#revenue-items-container .dyn-row-4')).map(row => ({
+                type: row.querySelector('.rev-type').value,
+                amount: +row.querySelector('.rev-amount').value || 0,
+                date: row.querySelector('.rev-date').value
+            })).filter(i => i.type && i.amount > 0);
+            if(items.length === 0) { alert("⚠️ الرجاء إدخال بند إيراد واحد على الأقل (نوع ومبلغ)"); return; }
+            await save('additionalRevenues', 'edit-additionalRevenue-id', { studentId, name: student.name, class: student.class, items, ts: new Date() }, [], 'additionalRevenues');
+            const c = document.getElementById('revenue-items-container');
+            c.innerHTML = '<label>بنود الإيراد</label>';
+            c.appendChild(buildRevenueRow());
+        };
+
+        window.saveCelebration = async () => {
+            const items = Array.from(document.querySelectorAll('#celebration-items-container .subject-row')).map(row => ({
+                name: row.querySelector('.cel-item-name').value,
+                amount: +row.querySelector('.cel-item-amount').value || 0
+            })).filter(i => i.name && i.amount > 0);
+            if(items.length === 0) { alert("⚠️ الرجاء إدخال منصرف واحد على الأقل (اسم ومبلغ)"); return; }
+            const data = { name: document.getElementById('cel-name').value, date: document.getElementById('cel-date').value, items, ts: new Date() };
+            await save('celebrations', 'edit-celebration-id', data, ['cel-name'], 'celebrations');
+            const c = document.getElementById('celebration-items-container');
+            c.innerHTML = '<label>منصرفات الاحتفال</label>';
+            c.appendChild(buildCelebrationRow());
+        };
+
+        // --- Edit ---
+        window.edit = (type, id) => {
+            const stateKeyMap = { student:'students', teacher:'teachers', exam:'exams', salary:'salaries', result:'results', treasuryExpense:'treasuryExpenses', schoolExpense:'schoolExpenses', trip:'trips', additionalRevenue:'additionalRevenues', celebration:'celebrations' };
+            const d = window.state[stateKeyMap[type]].find(x=>x.id===id);
+            if(!d) return;
+            document.getElementById(`edit-${type}-id`).value = id;
+            if(type==='student') {
+                document.getElementById('s-name').value = d.name || '';
+                document.getElementById('s-class').value = d.class || '';
+                document.getElementById('s-dob').value = d.dob || '';
+                document.getElementById('s-residence').value = d.residence || '';
+                document.getElementById('s-prev-grade').value = d.prevGrade || '';
+                document.getElementById('s-health').value = d.health || '';
+                document.getElementById('s-nat-id').value = d.natId || '';
+                document.getElementById('s-arrears').value = d.arrears || 0;
+                document.getElementById('s-total').value = d.total || 0;
+                document.getElementById('s-reg-fee').value = d.regFee || 0;
+                document.getElementById('s-discount').value = d.discount || 0;
+                document.getElementById('s-p1').value = d.p1 || 0;
+                document.getElementById('s-p2').value = d.p2 || 0;
+                document.getElementById('s-p3').value = d.p3 || 0;
+                document.getElementById('s-p4').value = d.p4 || 0;
+                document.getElementById('s-guardian').value = d.guardian || '';
+                document.getElementById('s-guardian-phone').value = d.guardianPhone || '';
+                document.getElementById('s-job').value = d.job || '';
+                calcRem();
+                document.getElementById('btn-cancel-student').style.display='inline-block';
+            } else if(type==='teacher') {
+                document.getElementById('t-name').value = d.name || '';
+                document.getElementById('t-subject').value = d.subject || '';
+                document.getElementById('t-phone').value = d.phone || '';
+            } else if(type==='exam') {
+                document.getElementById('ex-name').value = d.name || '';
+                document.getElementById('ex-class').value = d.class || '';
+                document.getElementById('ex-date').value = d.date || '';
+            } else if(type==='salary') {
+                document.getElementById('sal-name').value = d.name || '';
+                document.getElementById('sal-base').value = d.base || 0;
+                document.getElementById('sal-bonus').value = d.bonus || 0;
+                document.getElementById('sal-date').value = d.date || '';
+                const c = document.getElementById('deductions-container');
+                c.innerHTML = '<label>الخصومات (مرنة حسب التاريخ)</label>';
+                const list = (d.deductions && d.deductions.length) ? d.deductions : [null];
+                list.forEach(ded => c.appendChild(buildDeductionRow(ded)));
+                calcNetSalary();
+            } else if(type==='result') {
+                if(d.studentId) document.getElementById('res-student').value = d.studentId;
+                document.getElementById('res-class').value = d.class || '';
+                document.getElementById('res-exam-title').value = d.exam || '';
+                const c = document.getElementById('subjects-container');
+                c.innerHTML = '<label>المواد والدرجات (من 100)</label>';
+                (d.subjects||[]).forEach(s => c.appendChild(buildSubjectRow(s)));
+                calcFinalResult();
+            } else if(type==='treasuryExpense') {
+                document.getElementById('tre-exp-name').value = d.name || '';
+                document.getElementById('tre-exp-amount').value = d.amount || 0;
+                document.getElementById('tre-exp-date').value = d.date || '';
+            } else if(type==='schoolExpense') {
+                document.getElementById('sch-exp-type').value = d.type || 'يومي';
+                document.getElementById('sch-exp-name').value = d.name || '';
+                document.getElementById('sch-exp-amount').value = d.amount || 0;
+                document.getElementById('sch-exp-date').value = d.date || '';
+            } else if(type==='trip') {
+                document.getElementById('trip-type').value = d.type || 'علمية';
+                document.getElementById('trip-name').value = d.tripName || '';
+                document.getElementById('trip-date').value = d.date || '';
+                if(d.studentId) document.getElementById('trip-student').value = d.studentId;
+                document.getElementById('trip-fee').value = d.fee || 0;
+            } else if(type==='additionalRevenue') {
+                if(d.studentId) document.getElementById('ar-student').value = d.studentId;
+                const c = document.getElementById('revenue-items-container');
+                c.innerHTML = '<label>بنود الإيراد</label>';
+                (d.items||[]).forEach(it => c.appendChild(buildRevenueRow(it)));
+            } else if(type==='celebration') {
+                document.getElementById('cel-name').value = d.name || '';
+                document.getElementById('cel-date').value = d.date || '';
+                const c = document.getElementById('celebration-items-container');
+                c.innerHTML = '<label>منصرفات الاحتفال</label>';
+                (d.items||[]).forEach(it => c.appendChild(buildCelebrationRow(it)));
+            }
+            window.scrollTo(0,0);
+        };
+
+        window.resetForm = (containerId) => {
+            const container = document.getElementById(containerId);
+            if(!container) return;
+            container.querySelectorAll('input, select').forEach(i => { if(i.type !== 'hidden') i.value = ""; });
+            const idField = container.querySelector('input[type="hidden"]');
+            if(idField) idField.value = "";
+            if(containerId==='students') document.getElementById('btn-cancel-student').style.display='none';
+        };
+
+        window.deleteDoc = async (c, id) => { if(confirm('هل أنت متأكد من الحذف النهائي؟')) await deleteDoc(userDocRef(c, id)); };
+
+        // --- Schedules (Matrix) ---
+        const days = ["السبت","الأحد","الاثنين","الثلاثاء","الأربعاء","الخميس"];
+        window.loadSchedule = async () => {
+            const cls = document.getElementById('sch-class-select').value;
+            const body = document.getElementById('sch-body');
+            body.innerHTML = days.map((d,i)=> `<tr><td>${d}</td>${[1,2,3,4,5,6,7,8].map(h=> `<td><input type="text" class="sch-in" data-d="${i}" data-h="${h}"></td>`).join('')}</tr>`).join('');
+            if(scheduleUnsub) { scheduleUnsub(); scheduleUnsub = null; }
+            scheduleUnsub = onSnapshot(userDocRef('schedules', cls), d => {
+                if(d.exists()) {
+                    const g = d.data().grid;
+                    document.querySelectorAll('.sch-in').forEach(i=> i.value = (g[i.dataset.d] && g[i.dataset.d][i.dataset.h]) || "");
+                }
+            });
+        };
+        window.saveSchedule = async () => {
+            const cls = document.getElementById('sch-class-select').value, grid = {};
+            document.querySelectorAll('.sch-in').forEach(i=> {
+                if(!grid[i.dataset.d]) grid[i.dataset.d] = {};
+                grid[i.dataset.d][i.dataset.h] = i.value;
+            });
+            await setDoc(userDocRef('schedules', cls), { grid });
+            alert('✅ تم حفظ الجدول بنجاح!');
+        };
+
+        // --- Roster (استدعاء الطلاب) ---
+        window.loadRoster = () => {
+            const cls = document.getElementById('roster-class-select').value;
+            const q = (document.getElementById('roster-search')?.value || '').toLowerCase();
+            const body = document.getElementById('roster-body');
+            if(!cls) { body.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#888">الرجاء اختيار الفصل لعرض الطلاب</td></tr>'; return; }
+            let list = window.state.students.filter(s=>s.class===cls);
+            if(q) list = list.filter(s=>(s.name||'').toLowerCase().includes(q));
+            if(list.length===0) { body.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#888">لا يوجد طلاب مطابقون</td></tr>'; return; }
+            body.innerHTML = list.map(x=> `<tr><td>${x.name}</td><td>${x.dob||'-'}</td><td>${x.residence||'-'}</td><td>${x.guardian||'-'}</td><td>${x.guardianPhone||'-'}</td><td>${x.natId||'-'}</td><td style="color:var(--danger);font-weight:bold">${x.rem||0}</td></tr>`).join('');
+        };
+
+        // --- Receipts (نسخ وطباعة) ---
+        window.printReceipt = (id) => {
+            const s = window.state.students.find(x=>x.id===id);
+            if(!s) return;
+            const paid = (s.p1||0)+(s.p2||0)+(s.p3||0)+(s.p4||0);
+            const rem = s.rem||0;
+            const statusText = rem<=0 ? 'تم السداد بالكامل (خالص)' : `المتبقي: ${rem}`;
+            const today = new Date().toLocaleDateString('ar-EG');
+            const area = document.getElementById('receipt-print-area');
+            area.innerHTML = `
+                <div style="font-family:'Segoe UI',Tahoma,sans-serif; direction:rtl; text-align:center; border:3px solid #667eea; border-radius:15px; padding:30px; max-width:500px; margin:0 auto;">
+                    <h2 style="color:#667eea">🎓 رياض ومدارس رواد تاج الأصفياء الخاصة</h2>
+                    <p style="color:#666">إيصال دفع رسوم دراسية</p>
+                    <hr style="margin:15px 0">
+                    <table style="width:100%; text-align:right; font-size:16px; border-collapse:collapse;">
+                        <tr><td style="padding:6px 0"><b>اسم الطالب:</b></td><td>${s.name}</td></tr>
+                        <tr><td style="padding:6px 0"><b>الصف:</b></td><td>${s.class}</td></tr>
+                        <tr><td style="padding:6px 0"><b>تاريخ الإصدار:</b></td><td>${today}</td></tr>
+                        <tr><td style="padding:6px 0"><b>إجمالي الرسوم المستحقة:</b></td><td>${(s.total||0)+(s.regFee||0)+(s.arrears||0)-(s.discount||0)}</td></tr>
+                        <tr><td style="padding:6px 0"><b>تم دفع مبلغ:</b></td><td style="color:green; font-weight:bold">${paid}</td></tr>
+                        <tr><td style="padding:6px 0"><b>الحالة:</b></td><td style="color:${rem<=0?'green':'red'}; font-weight:bold">${statusText}</td></tr>
+                    </table>
+                    <hr style="margin:15px 0">
+                    <p style="color:#999; font-size:13px">إيصال صادر آلياً من نظام إدارة المدرسة - يمكن حفظه كـ PDF من نافذة الطباعة</p>
+                </div>`;
+            window.print();
+        };
+
+        // --- Listeners & Rendering ---
+        function startListeners() {
+            const cols = ['students','teachers','exams','results','salaries','treasuryExpenses','schoolExpenses','additionalRevenues','trips','celebrations'];
+            cols.forEach(c => {
+                const unsub = onSnapshot(query(userCol(c), orderBy("ts", "desc")), s => {
+                    window.state[c] = s.docs.map(d=>({id:d.id, ...d.data()}));
+                    render(c);
+                    if(c==='students') { updateStats(); fillStudentSelects(); loadRoster(); }
+                    if(c==='students' || c==='additionalRevenues' || c==='trips' || c==='treasuryExpenses') updateTreasury();
+                });
+                activeUnsubs.push(unsub);
+            });
+        }
+
+        window.render = (c) => {
+            const body = document.getElementById(c+'-body');
+            if(!body) return;
+            const searchIds = { students:'search-s', results:'search-res' };
+            const q = (searchIds[c] ? (document.getElementById(searchIds[c])?.value || '') : '').toLowerCase();
+            const fClass = document.getElementById('res-filter-class')?.value || "all";
+
+            const data = window.state[c].filter(x=> {
+                const matchQ = Object.values(x).join(' ').toLowerCase().includes(q);
+                const matchC = (c!=='results') || fClass==='all' || x.class === fClass;
+                return matchQ && matchC;
+            });
+
+            body.innerHTML = data.map(x => {
+                if(c==='students') return `<tr><td>${x.name}</td><td>${x.class}</td><td>${x.total||0}</td><td style="color:var(--success); font-weight:bold">${(x.p1||0)+(x.p2||0)+(x.p3||0)+(x.p4||0)}</td><td style="color:var(--danger); font-weight:bold">${x.rem||0}</td><td>${x.guardian||'-'}</td><td><button class="btn btn-warning btn-sm" onclick="edit('student','${x.id}')">✏️</button> <button class="btn btn-success btn-sm" onclick="printReceipt('${x.id}')">🖨️ إيصال</button> <button class="btn btn-danger btn-sm" onclick="deleteDoc('students','${x.id}')">🗑️</button></td></tr>`;
+                if(c==='teachers') return `<tr><td>${x.name}</td><td>${x.subject}</td><td>${x.phone||'-'}</td><td><button class="btn btn-warning btn-sm" onclick="edit('teacher','${x.id}')">✏️</button> <button class="btn btn-danger btn-sm" onclick="deleteDoc('teachers','${x.id}')">🗑️</button></td></tr>`;
+                if(c==='exams') return `<tr><td>${x.name}</td><td>${x.class}</td><td>${x.date}</td><td><button class="btn btn-warning btn-sm" onclick="edit('exam','${x.id}')">✏️</button> <button class="btn btn-danger btn-sm" onclick="deleteDoc('exams','${x.id}')">🗑️</button></td></tr>`;
+                if(c==='results') return `<tr><td>${x.name}</td><td>${x.class}</td><td>${x.exam}</td><td>${x.percent}</td><td style="font-weight:bold">${x.grade}</td><td><button class="btn btn-warning btn-sm" onclick="edit('result','${x.id}')">✏️</button> <button class="btn btn-danger btn-sm" onclick="deleteDoc('results','${x.id}')">🗑️</button></td></tr>`;
+                if(c==='salaries') { const totalDed = x.deductions ? x.deductions.reduce((a,d)=>a+(+d.amount||0),0) : (x.deduct||0); return `<tr><td>${x.name}</td><td>${x.base}</td><td>${x.bonus}</td><td style="color:var(--danger)">${totalDed}</td><td style="font-weight:bold; color:var(--success)">${x.net}</td><td>${x.date}</td><td><button class="btn btn-warning btn-sm" onclick="edit('salary','${x.id}')">✏️</button> <button class="btn btn-danger btn-sm" onclick="deleteDoc('salaries','${x.id}')">🗑️</button></td></tr>`; }
+                if(c==='treasuryExpenses') return `<tr><td>${x.name}</td><td>${x.amount}</td><td>${x.date||'-'}</td><td><button class="btn btn-warning btn-sm" onclick="edit('treasuryExpense','${x.id}')">✏️</button> <button class="btn btn-danger btn-sm" onclick="deleteDoc('treasuryExpenses','${x.id}')">🗑️</button></td></tr>`;
+                if(c==='schoolExpenses') return `<tr><td>${x.type||'-'}</td><td>${x.name}</td><td>${x.amount}</td><td>${x.date||'-'}</td><td><button class="btn btn-warning btn-sm" onclick="edit('schoolExpense','${x.id}')">✏️</button> <button class="btn btn-danger btn-sm" onclick="deleteDoc('schoolExpenses','${x.id}')">🗑️</button></td></tr>`;
+                if(c==='trips') return `<tr><td>${x.name}</td><td>${x.class||'-'}</td><td>${x.type}</td><td>${x.tripName||'-'}</td><td>${x.fee}</td><td>${x.date||'-'}</td><td><button class="btn btn-warning btn-sm" onclick="edit('trip','${x.id}')">✏️</button> <button class="btn btn-danger btn-sm" onclick="deleteDoc('trips','${x.id}')">🗑️</button></td></tr>`;
+                if(c==='additionalRevenues') { const total = (x.items||[]).reduce((a,i)=>a+(i.amount||0),0); return `<tr><td>${x.name}</td><td>${x.class||'-'}</td><td>${(x.items||[]).length}</td><td style="font-weight:bold;color:var(--success)">${total}</td><td><button class="btn btn-warning btn-sm" onclick="edit('additionalRevenue','${x.id}')">✏️</button> <button class="btn btn-danger btn-sm" onclick="deleteDoc('additionalRevenues','${x.id}')">🗑️</button></td></tr>`; }
+                if(c==='celebrations') { const total = (x.items||[]).reduce((a,i)=>a+(i.amount||0),0); return `<tr><td>${x.name}</td><td>${x.date||'-'}</td><td>${(x.items||[]).length}</td><td style="font-weight:bold;color:var(--danger)">${total}</td><td><button class="btn btn-warning btn-sm" onclick="edit('celebration','${x.id}')">✏️</button> <button class="btn btn-danger btn-sm" onclick="deleteDoc('celebrations','${x.id}')">🗑️</button></td></tr>`; }
+            }).join('');
+        };
+
+        function updateStats() {
+            document.getElementById('count-students').textContent = window.state.students.length;
+            document.getElementById('count-teachers').textContent = window.state.teachers.length;
+            document.getElementById('total-paid').textContent = window.state.students.reduce((a,b)=>a+((b.p1||0)+(b.p2||0)+(b.p3||0)+(b.p4||0)),0);
+            document.getElementById('total-rem').textContent = window.state.students.reduce((a,b)=>a+(b.rem||0),0);
+        }
+
+        function updateTreasury() {
+            const incomeEl = document.getElementById('treasury-income');
+            if(!incomeEl) return;
+            const studentsIncome = window.state.students.reduce((a,b)=>a+((b.p1||0)+(b.p2||0)+(b.p3||0)+(b.p4||0)),0);
+            const revenueIncome = window.state.additionalRevenues.reduce((a,b)=>a+(b.items||[]).reduce((x,i)=>x+(i.amount||0),0),0);
+            const tripsIncome = window.state.trips.reduce((a,b)=>a+(b.fee||0),0);
+            const totalIncome = studentsIncome + revenueIncome + tripsIncome;
+            const totalExpenses = window.state.treasuryExpenses.reduce((a,b)=>a+(b.amount||0),0);
+            incomeEl.textContent = totalIncome;
+            document.getElementById('treasury-expenses').textContent = totalExpenses;
+            document.getElementById('treasury-balance').textContent = totalIncome - totalExpenses;
+        }
+    </script>
+</body>
+</html>
